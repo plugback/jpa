@@ -4,15 +4,15 @@ Plugback JPA is a module that allows you to extend the Java Persistence API to q
 ===
 
 ##What do you need
-To use JPA Plugback you need:
+To use Plugback JPA you need:
 
 <ul>
 	<li>the Xtend library</li>
-	<li>add to your class the import
-		<code>import static extension com.plugback.jpa.DBExtension.*</code>
+	<li>to add the import
+		<code>import static extension com.plugback.jpa.DBExtension.*</code> to your class.
 	You can find this class at https://github.com/plugback/jpa/blob/master/src/main/java/com/plugback/jpa/DBExtension.xtend
 	</li>
-	<li>an <code>EntityManager</code></li>
+	<li>a JPA <code>EntityManager</code></li>
 </ul>
 
 
@@ -32,7 +32,9 @@ class MyEntity {
 }
 ```   
 
-Note that @Property refers to the Plugback Active <code>@Property</code> annotation, and not the Xtend built-in @Property. See the <b>Important Notes</b> section below for more details.
+Note that <code>@Property</code> refers to the Plugback Active <code>@Property</code> annotation, and not the Xtend built-in <code>@Property</code>. See the <b>Important Notes</b> section below for more details.
+
+Ok, let's start with the features:
 
 ###FindAll
 
