@@ -50,7 +50,7 @@ where <code>myEntities</code> will be a collection having generic type <code>MyE
 One of the most powerful methods of Plugback JPA is the <code>where</code> method. Let's see an example:
    
 ```xtend
-db.find(MyEntity).where[email = "me@salvatoreromeo.com"].resultList
+db.find(MyEntity).where[email = "email@somewhere.ops"].resultList
 ```
     
 
