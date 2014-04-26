@@ -1,0 +1,7 @@
+/target
+.classpath
+.project
+.settings/
+derby.log
+src/main/xtend-gen/
+src/test/xtend-gen/
