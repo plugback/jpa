@@ -9,7 +9,9 @@ To use JPA Plugback you need:
 <ul>
 	<li>the Xtend library</li>
 	<li>add to your class the import
-		<code>import static extension com.plugback.jpa.DBExtension.*</code></li>
+		<code>import static extension com.plugback.jpa.DBExtension.*</code>
+	You can find this class at https://github.com/plugback/jpa/blob/master/src/main/java/com/plugback/jpa/DBExtension.xtend
+	</li>
 	<li>an <code>EntityManager</code></li>
 </ul>
 
