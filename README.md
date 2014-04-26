@@ -40,7 +40,7 @@ Ok, let's start with the features:
 
 The <code>findAll</code> method allows you to get all objects of a particular class:<br>
 ```xtend
-var = myEntities db.findAll (MyEntity)
+var myEntities = db.findAll(MyEntity)
 ```
 where <code>myEntities</code> will be a collection having generic type <code>MyEntity</code>.
 
