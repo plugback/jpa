@@ -23,7 +23,7 @@ import org.junit.Test
 
 import static org.junit.Assert.*
 
-import static extension com.plugback.jpa.DBExtension.*
+import static extension com.plugback.jpa.DBX.*
 
 class TestDBExtension {
 
@@ -196,6 +196,30 @@ class TestDBExtension {
 	}
 
 	@Test
+	def void testPagination() {
+		val result = db.find(TestUserPojo).where[email like("%me%")].orderBy[name desc].resultList[page = 1]
+		assertEquals(3, result.size)
+	}
+
+	@Test
+	def void testPagination2() {
+		val result = db.find(TestUserPojo).where[email like("%me%")].orderBy[name desc].resultList[page = 1 size = 2]
+		assertEquals(2, result.size)
+	}
+
+	@Test
+	def void testPagination3() {
+		val result = db.find(TestUserPojo).where[email like("%me%")].orderBy[name desc].resultList[page = 2 size = 2]
+		assertEquals(1, result.size)
+	}
+
+	@Test
+	def void testPagination4() {
+		val result = db.find(TestUserPojo).resultList[page = 2 size = 2]
+		assertEquals(1, result.size)
+	}
+
+	@Test
 	def void concurrentTest() {
 		val tests = TestDBExtension.methods.filter[isAnnotationPresent(Test) && isAnnotationPresent(Concurrent)]
 		val es = Executors.newCachedThreadPool
@@ -209,7 +233,7 @@ class TestDBExtension {
 					try {
 						test.invoke(t)
 					} catch (Exception e) {
-						println(DBExtension.query.unwrap(JpaQuery).getDatabaseQuery().getSQLString())
+						println(DBX.query.unwrap(JpaQuery).getDatabaseQuery().getSQLString())
 						throw e
 					}
 					println('''just executed test «p»: «test.name»''')

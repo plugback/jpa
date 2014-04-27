@@ -6,14 +6,32 @@ import javassist.util.proxy.ProxyFactory
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 
-class DBExtension<T> {
+/**
+ * 
+ * To use this class add <br><br>
+ *		<code>import static extension com.plugback.jpa.DBX.*</code> to your class.
+ * <br><br>
+ * Use the <code>find</code> method below to retrieve all 
+ * stored entities of a specified class from your db:
+ * <br>
+ * <br>
+ * <code>var myEntities = db.find(MyEntity).resultList</code>
+ * <br><br>
+ * The find method can be followed by <code>where</code> or <code>orderBy</code> to filter the results.
+ * <br>
+ * Pagination is supported using the syntax below:
+ * <br><br>
+ * <code>db.find(MyEntity).where[name = "romeo"].orderBy[name].resultList[page = 1 size = 2]</code>
+ * @author Salvatore A. Romeo
+ */
+class DBX<T> {
 
 	val private static queryBooleanOperator = new ThreadLocal<List<String>>
 	val private static paramsAndValues = new ThreadLocal<List<Pair<String, Object>>>
 	val private static sortOrder = new ThreadLocal<String>
 	val private static sortOn = new ThreadLocal<String>
 	val private static whereQuery = new ThreadLocal<String>
-	val private static currentDBExecution = new ThreadLocal<DBExtension<?>>
+	val private static currentDBExecution = new ThreadLocal<DBX<?>>
 
 	val EntityManager em
 	val Class<T> c
@@ -28,8 +46,21 @@ class DBExtension<T> {
 		this.c = c
 	}
 
+	/**
+	 * Use the <code>find</code> method below to retrieve all 
+	 * stored entities of a specified class from your db:
+	 * <br>
+	 * <br>
+	 * <code>var myEntities = db.find(MyEntity).resultList</code>
+	 * <br><br>
+	 * The find method can be followed by where or orderBy to filter the results.
+	 * <br>
+	 * Pagination is supported using the syntax below:
+	 * <br><br>
+	 * <code>db.find(MyEntity).where[name = "romeo"].orderBy[name].resultList[page = 1 size = 2]</code>
+	 */
 	def static <X> find(EntityManager db, Class<X> c) {
-		val dbe = new DBExtension<X>(c, db)
+		val dbe = new DBX<X>(c, db)
 		whereQuery.remove
 		paramsAndValues.remove
 		queryBooleanOperator.remove
@@ -37,11 +68,20 @@ class DBExtension<T> {
 		sortOrder.remove
 		currentDBExecution.remove
 		currentDBExecution.set(dbe)
+		val q = db.createQuery('''select x from «c.simpleName» x''', c)
+		dbe.setQuery(q)
 		return dbe
 	}
 
+	/**
+	 * You can use the <code>findAll</code> method below to retrieve all 
+	 * stored entities of a specified class from your db:
+	 * <br>
+	 * <br>
+	 * <code>var myEntities = db.findAll(MyEntity)</code>
+	 */
 	def static <T> findAll(EntityManager db, Class<T> c) {
-		return db.createQuery('''select x from «c.simpleName» x''', c).resultList as List<T>
+		return find(db, c).resultList as List<T>
 	}
 
 	def static void and() {
@@ -67,7 +107,21 @@ class DBExtension<T> {
 		paramsAndValues.get.add(newLast)
 	}
 
-	def static <T> orderBy(DBExtension<T> dbe, (T)=>void sortByClause) {
+	/**
+	 * 
+	 * The <code>orderBy</code> method allows you to specify how to order the results from 
+	 * the database:
+	 * <br><br>
+	 * <code>db.find(MyEntity).where[name = "romeo"].orderBy[name].resultList</code><br>
+	 * <code>db.find(MyEntity).where[name = "romeo"].orderBy[name asc].resultList</code><br>
+	 * <code>db.find(MyEntity).where[name = "romeo"].orderBy[name desc].resultList</code><br>
+	 * <br><br>
+	 * Immediately after using the method <code>where</code> you can take the results or order it using the above syntax.
+	 * <br><br>
+	 * In addition to the class fields, you can add the <code>asc</code> or <code>desc</code> keywords to specify the sort order.
+	 * <br>
+	 */
+	def static <T> orderBy(DBX<T> dbe, (T)=>void sortByClause) {
 		val MethodHandler operation = [ selfObject, thisMethod, proceed, args |
 			val property = thisMethod.name.substring(3).toFirstLower
 			sortOn.set(property)
@@ -89,6 +143,27 @@ class DBExtension<T> {
 		dbe
 	}
 
+	/**
+	 * 
+	 * The <code>where</code> method allows to filter the results from the DB 
+	 * in a type safe manner:
+	 * <br>
+	 * <br>
+	 * <code>db.find(MyEntity).where[email = "email@somewhere.ops"].resultList</code>
+	 * <br><br>
+	 * The method above allows you to filter the entities in the DB based on a class fields, in a completely type-safe way.
+	 * <br><br><code>and or</code> boolean operators are supported:
+	 * <br>
+	 * <code>db.find(MyEntity).where[id = 1L or id = 2L].resultList</code><br>
+	 * 
+	 * <code>db.find(MyEntity).where[id = 1L and name = "romeo"].resultList</code><br>
+	 * <br>
+	 * The <code>like</code> operator is supported too:<br>
+	 * 
+	 * <code>db.find(MyEntity).where[email like("%me%")].resultList</code><br>
+	 * <code>db.find(MyEntity).where[email like("%me%") and name like("%ro%")].resultList</code><br>
+	 * 
+	 */
 	def where((T)=>void whereClause) {
 
 		queryBooleanOperator.set(newArrayList)
@@ -153,11 +228,35 @@ class DBExtension<T> {
 		return _query.resultList
 	}
 
-	def static <T> setPageSize(DBExtension<T> dbe, int pageSize) {
+	/**
+	 * Pagination is supported using the syntax below:
+	 * <br><br>
+	 * <code>db.find(MyEntity).where[name = "romeo"].resultList[page = 1 size = 50]</code>
+	 * 
+	 * <br>
+	 * When using square brackets, default values for <code>page</code> and <code>size</code> are 1 and 10 respectively, 
+	 * so you can specify only the page with size 10 or the size only for the first page.
+	 *
+	 */
+	def resultList((Pagination)=>void p) {
+		val pagination = new Pagination
+		pagination.page = 1
+		pagination.size = 10
+		p.apply(pagination)
+		val offset = (pagination.page - 1) * pagination.size
+		return _query.setMaxResults(pagination.size).setFirstResult(offset).resultList
+	}
+
+	def static <T> setPageSize(DBX<T> dbe, int pageSize) {
 		val pr = new PageResult(dbe._query.setMaxResults(pageSize))
 		pr
 	}
 
+}
+
+class Pagination {
+	@Property int page
+	@Property int size
 }
 
 @Data

@@ -9,8 +9,8 @@ To use Plugback JPA you need:
 <ul>
 	<li>the Xtend library</li>
 	<li>to add the import
-		<code>import static extension com.plugback.jpa.DBExtension.*</code> to your class.
-	You can find this class at https://github.com/plugback/jpa/blob/master/src/main/java/com/plugback/jpa/DBExtension.xtend
+		<code>import static extension com.plugback.jpa.DBX.*</code> to your class.
+	You can find this class at https://github.com/plugback/jpa/blob/master/src/main/java/com/plugback/jpa/DBX.xtend
 	</li>
 	<li>a JPA <code>EntityManager</code></li>
 </ul>
@@ -38,7 +38,13 @@ Ok, let's start with the features:
 
 ###FindAll
 
-The <code>findAll</code> method allows you to get all objects of a particular class:<br>
+You can use the syntax below to retrieve all stored entities of a specified class from your db:
+
+```xtend
+var myEntities = db.find(MyEntity).resultList
+```
+
+The <code>findAll</code> method is a shortcut method to get all objects of a particular class:<br>
 ```xtend
 var myEntities = db.findAll(MyEntity)
 ```
@@ -79,13 +85,15 @@ Immediately after using the method <code>where</code> you can take the results o
 In addition to the class fields, you can add the <code>asc</code> or <code>desc</code> keywords to specify the sort order.
             
 ###Pagination
-The Plugback JPA module supports pagination of results:
+The Plugback JPA module supports pagination of results. Simply specify the page you want and its size after the resultList command:
 
 ```xtend
-db.find(MyEntity).where[name = "romeo"].orderBy[name].setPageSize(10).getPage(1)
+db.find(MyEntity).where[name = "romeo"].orderBy[name].resultList[page = 1 size = 50]
 ```
 
-The <code>setPageSize</code> method can be used immediately after the <code>where</code> method or after the <code>orderBy</code> method. <code>setPageSize</code> allows you to specify the page size and <code>getPage</code> is used to specify which page is required.
+When using square brackets, default values for <code>page</code> and <code>size</code> are 1 and 10 respectively, so you can specify only the <code>page</code> with <code>size</code> 10 or the size only for the first page.
+
+Alternatively, the <code>setPageSize</code> method can be used immediately after the <code>where</code> method or after the <code>orderBy</code> method. <code>setPageSize</code> allows you to specify the page size and <code>getPage</code> is used to specify which page is required.
             
 ##Important notes
 The <code>where</code> method works only with POJOs, so you can not use classes in which the fields are named with the <code>_</code> prefix. Unfortunately the <code>@Data</code> and <code>@Property</code> built in Xtend active annotations do not create standard POJOs, and are not supported at this time. <br>
