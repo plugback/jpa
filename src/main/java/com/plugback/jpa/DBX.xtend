@@ -6,14 +6,14 @@ import javassist.util.proxy.ProxyFactory
 import javax.persistence.EntityManager
 import javax.persistence.TypedQuery
 
-class DBExtension<T> {
+class DBX<T> {
 
 	val private static queryBooleanOperator = new ThreadLocal<List<String>>
 	val private static paramsAndValues = new ThreadLocal<List<Pair<String, Object>>>
 	val private static sortOrder = new ThreadLocal<String>
 	val private static sortOn = new ThreadLocal<String>
 	val private static whereQuery = new ThreadLocal<String>
-	val private static currentDBExecution = new ThreadLocal<DBExtension<?>>
+	val private static currentDBExecution = new ThreadLocal<DBX<?>>
 
 	val EntityManager em
 	val Class<T> c
@@ -29,7 +29,7 @@ class DBExtension<T> {
 	}
 
 	def static <X> find(EntityManager db, Class<X> c) {
-		val dbe = new DBExtension<X>(c, db)
+		val dbe = new DBX<X>(c, db)
 		whereQuery.remove
 		paramsAndValues.remove
 		queryBooleanOperator.remove
@@ -37,11 +37,13 @@ class DBExtension<T> {
 		sortOrder.remove
 		currentDBExecution.remove
 		currentDBExecution.set(dbe)
+		val q = db.createQuery('''select x from «c.simpleName» x''', c)
+		dbe.setQuery(q)
 		return dbe
 	}
 
 	def static <T> findAll(EntityManager db, Class<T> c) {
-		return db.createQuery('''select x from «c.simpleName» x''', c).resultList as List<T>
+		return find(db, c).resultList as List<T>
 	}
 
 	def static void and() {
@@ -67,7 +69,7 @@ class DBExtension<T> {
 		paramsAndValues.get.add(newLast)
 	}
 
-	def static <T> orderBy(DBExtension<T> dbe, (T)=>void sortByClause) {
+	def static <T> orderBy(DBX<T> dbe, (T)=>void sortByClause) {
 		val MethodHandler operation = [ selfObject, thisMethod, proceed, args |
 			val property = thisMethod.name.substring(3).toFirstLower
 			sortOn.set(property)
@@ -153,11 +155,25 @@ class DBExtension<T> {
 		return _query.resultList
 	}
 
-	def static <T> setPageSize(DBExtension<T> dbe, int pageSize) {
+	def resultList((Pagination)=>void p) {
+		val pagination = new Pagination
+		pagination.page = 1
+		pagination.size = 10
+		p.apply(pagination)
+		val offset = (pagination.page - 1) * pagination.size
+		return _query.setMaxResults(pagination.size).setFirstResult(offset).resultList
+	}
+
+	def static <T> setPageSize(DBX<T> dbe, int pageSize) {
 		val pr = new PageResult(dbe._query.setMaxResults(pageSize))
 		pr
 	}
 
+}
+
+class Pagination {
+	@Property int page
+	@Property int size
 }
 
 @Data
