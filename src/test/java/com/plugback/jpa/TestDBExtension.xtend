@@ -13,7 +13,6 @@ import javax.persistence.Persistence
 import org.databene.contiperf.PerfTest
 import org.databene.contiperf.Required
 import org.databene.contiperf.junit.ContiPerfRule
-import org.eclipse.persistence.jpa.JpaQuery
 import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
@@ -65,12 +64,6 @@ class TestDBExtension {
 	@After
 	def void clearDB() {
 		//clear(TestUserPojo)
-	}
-
-	@Test
-	def void findAll() {
-		val result = db.findAll(TestUserPojo)
-		assertEquals(3, result.size)
 	}
 
 	@Concurrent
@@ -233,7 +226,6 @@ class TestDBExtension {
 					try {
 						test.invoke(t)
 					} catch (Exception e) {
-						println(DBX.query.unwrap(JpaQuery).getDatabaseQuery().getSQLString())
 						throw e
 					}
 					println('''just executed test «p»: «test.name»''')
@@ -244,6 +236,7 @@ class TestDBExtension {
 
 	@Rule public val rule = new ContiPerfRule
 
+	//@Ignore
 	@PerfTest(invocations=10000, threads=4)
 	@Required(average=10)
 	@Test
@@ -266,29 +259,165 @@ class TestDBExtension {
 		tdb.transaction.commit
 	}
 
-	def insertIntoDB(Object o) {
+	def insertIntoDB(Object... o) {
 		val tdb = emf.createEntityManager
 		tdb.transaction.begin
-		tdb.merge(o)
+		o.forEach[tdb.merge(it)]
 		tdb.transaction.commit
 	}
 
 	def clear(Class<?>... cs) {
 		val tdb = emf.createEntityManager
 		tdb.transaction.begin
-		cs.forEach[tdb.findAll(it).forEach[tdb.remove(it)]]
+		cs.forEach[tdb.find(it).resultList.forEach[tdb.remove(it)]]
 		tdb.transaction.commit
+	}
+
+	@Concurrent
+	@Test
+	def void testGreaterThan() {
+		val a = 1
+		val b = 2
+		assertTrue(b > a)
+		assertFalse(a > b)
+		val al = new Long(a)
+		val bl = new Long(b)
+		assertTrue(bl > al)
+		assertFalse(al > bl)
+
+		val result = db.find(TestUserPojo).where[id > 0].resultList
+		assertEquals(3, result.size)
+		assertTrue(result.filter[email == "me@salvatoreromeo.com"].size == 1)
+		assertTrue(result.filter[email == "me2@salvatoreromeo.com"].size == 1)
+		val result2 = db.find(TestUserPojo).where[id > 2L].resultList
+		assertEquals(1, result2.size)
+		val result3 = db.find(TestUserPojo).where[id > 1L].resultList
+		assertEquals(2, result3.size)
+		assertTrue(result3.filter[id == 1L].size == 0)
+		val result4 = db.find(TestUserPojo).where[id > 2].resultList
+		assertEquals(1, result4.size)
+	}
+
+	@Concurrent
+	@Test
+	def void testGreaterEqualsThan() {
+		val a = 1
+		val b = 2
+		val c = 2
+		assertTrue(b >= a)
+		assertFalse(a >= b)
+		val al = new Long(a)
+		val bl = new Long(b)
+		assertTrue(bl >= al)
+		assertFalse(al >= bl)
+		assertTrue(b >= c)
+		assertTrue(c >= b)
+
+		val result = db.find(TestUserPojo).where[id >= 0].resultList
+		assertEquals(3, result.size)
+		assertTrue(result.filter[email == "me@salvatoreromeo.com"].size == 1)
+		assertTrue(result.filter[email == "me2@salvatoreromeo.com"].size == 1)
+		val result2 = db.find(TestUserPojo).where[id >= 2L].resultList
+		assertEquals(2, result2.size)
+		assertTrue(result2.filter[id == 1L].size == 0)
+		val result3 = db.find(TestUserPojo).where[id >= 1L].resultList
+		assertEquals(3, result3.size)
+		assertTrue(result3.filter[id == 1L].size == 1)
+		val result4 = db.find(TestUserPojo).where[id >= 2].resultList
+		assertEquals(2, result4.size)
+	}
+
+	@Concurrent
+	@Test
+	def void testLessThan() {
+		val a = 1
+		val b = 2
+		assertTrue(a < b)
+		assertFalse(b < a)
+		val al = new Long(a)
+		val bl = new Long(b)
+		assertTrue(al < bl)
+		assertFalse(bl < al)
+
+		val result = db.find(TestUserPojo).where[id < 4].resultList
+		assertEquals(3, result.size)
+		assertTrue(result.filter[email == "me@salvatoreromeo.com"].size == 1)
+		assertTrue(result.filter[email == "me2@salvatoreromeo.com"].size == 1)
+		val result2 = db.find(TestUserPojo).where[id < 3L].resultList
+		assertEquals(2, result2.size)
+		assertTrue(result2.filter[id == 3L].size == 0)
+		val result3 = db.find(TestUserPojo).where[id < 1L].resultList
+		assertEquals(0, result3.size)
+		val result4 = db.find(TestUserPojo).where[id < 3].resultList
+		assertEquals(2, result4.size)
+	}
+
+	@Concurrent
+	@Test
+	def void testLessEqualsThan() {
+		val a = 1
+		val b = 2
+		val c = 2
+		assertTrue(a <= b)
+		assertFalse(b <= a)
+		val al = new Long(a)
+		val bl = new Long(b)
+		assertTrue(al <= bl)
+		assertFalse(bl <= al)
+		assertTrue(b <= c)
+		assertTrue(c <= b)
+
+		val result = db.find(TestUserPojo).where[id <= 4].resultList
+		assertEquals(3, result.size)
+		assertTrue(result.filter[email == "me@salvatoreromeo.com"].size == 1)
+		assertTrue(result.filter[email == "me2@salvatoreromeo.com"].size == 1)
+		val result2 = db.find(TestUserPojo).where[id <= 3L].resultList
+		assertEquals(3, result2.size)
+		assertTrue(result2.filter[id == 3L].size == 1)
+		val result3 = db.find(TestUserPojo).where[id <= 1L].resultList
+		assertEquals(1, result3.size)
+		val result4 = db.find(TestUserPojo).where[id <= 3].resultList
+		assertEquals(3, result4.size)
+
+		val result5 = db.find(TestUserPojo).where[id <= 3L and name = "salvatore"].resultList
+		assertEquals(1, result5.size)
+
+		val result6 = db.find(TestUserPojo).where[id <= 1L or name = "salvatore"].resultList
+		assertEquals(2, result6.size)
+	}
+
+	@Test
+	def void testNestedObjects() {
+		val np = new TestUserPojo => [id = 6L name = "nested"]
+		val mp = new TestUserPojo2 => [id = 5L name2 = "fausta" pojo = np email2 = "f@x.co"]
+		insertIntoDB(np, mp)
+
+		val result = db.find(TestUserPojo2).where[pojo.name = "nested"].resultList
+		assertEquals(1, result.size)
+		assertTrue(result.filter[email2 == "f@x.co"].size == 1)
+
+		db.transaction.begin
+		db.remove(db.find(TestUserPojo2).where[name2 = "fausta"].singleResult)
+		db.remove(db.find(TestUserPojo).where[name = "nested"].singleResult)
+		db.transaction.commit
 	}
 
 }
 
-@Entity
-class TestUserPojo {
+@Entity class TestUserPojo {
 
-	@Id
-	@Property Long id
+	@Id @Property Long id
 	@Property String name
 	@Property String email
+
+}
+
+@Entity class TestUserPojo2 {
+
+	@Id @Property Long id
+	@Property String name2
+	@Property String email2
+	@Property TestUserPojo pojo
 
 }
 
