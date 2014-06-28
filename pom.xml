@@ -4,11 +4,32 @@
 
 	<groupId>com.plugback</groupId>
 	<artifactId>jpa</artifactId>
-	<version>1.0.0-BETA</version>
+	<version>2.0.0</version>
 	<packaging>jar</packaging>
 
 	<name>jpa</name>
-	<url>http://maven.apache.org</url>
+	<url>https://github.com/plugback/jpa</url>
+
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<url>git@github.com:plugback/jpa.git</url>
+		<connection>scm:git:git@github.com:plugback/jpa.git</connection>
+	</scm>
+
+	<developers>
+		<developer>
+			<id>salvatoreromeo</id>
+			<name>Salvatore A. Romeo</name>
+			<email>me@salvatoreromeo.com</email>
+		</developer>
+	</developers>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -25,17 +46,14 @@
 		<dependency>
 			<groupId>org.eclipse.xtend</groupId>
 			<artifactId>org.eclipse.xtend.core</artifactId>
-			<version>2.6.0</version>
+			<version>2.6.1</version>
 		</dependency>
-
-
 
 		<dependency>
 			<groupId>com.plugback</groupId>
 			<artifactId>active</artifactId>
-			<version>1.0.0-BETA</version>
+			<version>1.0.1-BETA</version>
 		</dependency>
-
 
 		<dependency>
 			<groupId>org.eclipse.persistence</groupId>
@@ -44,18 +62,27 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.javassist</groupId>
+			<artifactId>javassist</artifactId>
+			<version>3.18.1-GA</version>
+		</dependency>
+
+
+
+
+		<dependency>
 			<groupId>org.apache.derby</groupId>
 			<artifactId>derby</artifactId>
 			<version>10.10.1.1</version>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.derby</groupId>
 			<artifactId>derbyclient</artifactId>
 			<version>10.10.1.1</version>
+			<scope>test</scope>
 		</dependency>
-
-
 
 		<dependency>
 			<groupId>junit</groupId>
@@ -64,18 +91,11 @@
 			<scope>test</scope>
 		</dependency>
 
-
-
 		<dependency>
 			<groupId>org.databene</groupId>
 			<artifactId>contiperf</artifactId>
 			<version>2.2.0</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.javassist</groupId>
-			<artifactId>javassist</artifactId>
-			<version>3.18.1-GA</version>
+			<scope>test</scope>
 		</dependency>
 
 
@@ -101,7 +121,7 @@
 			<plugin>
 				<groupId>org.eclipse.xtend</groupId>
 				<artifactId>xtend-maven-plugin</artifactId>
-				<version>2.6.0</version>
+				<version>2.6.1</version>
 				<executions>
 					<execution>
 						<goals>
@@ -160,9 +180,94 @@
 				</configuration>
 			</plugin>
 
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<version>1.1</version>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+
+
 
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>release-sign-artifacts</id>
+			<activation>
+				<property>
+					<name>performRelease</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>1.1</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<description>Plugback Active is a set of active annotations for the Xtend programming language.</description>
+	<organization>
+		<name>Plugback</name>
+		<url>http://plugback.com</url>
+	</organization>
+
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+	</parent>
 
 
 </project>
