@@ -10,13 +10,9 @@ import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Temporal
 import javax.persistence.TemporalType
-import org.databene.contiperf.PerfTest
-import org.databene.contiperf.Required
-import org.databene.contiperf.junit.ContiPerfRule
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
-import org.junit.Rule
 import org.junit.Test
 
 import static org.junit.Assert.*
@@ -207,17 +203,14 @@ class TestDBExtension extends DBTest {
 		es.shutdown()
 	}
 
-	@Rule public val rule = new ContiPerfRule
-
-	//@Ignore
-	@PerfTest(invocations=10000, threads=4)
-	@Required(average=10)
-	@Test
+	@Test(timeout=10000)
 	def void performanceTest() {
 		val tests = TestDBExtension.methods.filter[isAnnotationPresent(Test) && isAnnotationPresent(Concurrent)]
-		val rn = Math.round(((Math.random() * (tests.size - 1)))).intValue
-		val test = tests.get(rn)
-		test.invoke(new TestDBExtension)
+		for (i : 1 .. 1000) {
+			val rn = Math.round(((Math.random() * (tests.size - 1)))).intValue
+			val test = tests.get(rn)
+			test.invoke(new TestDBExtension)
+		}
 	}
 
 	def insertSomeData() {

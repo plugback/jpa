@@ -91,12 +91,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>org.databene</groupId>
-			<artifactId>contiperf</artifactId>
-			<version>2.2.0</version>
-			<scope>test</scope>
-		</dependency>
 
 
 	</dependencies>
@@ -113,6 +107,10 @@
 				<directory>src/main/java</directory>
 				<filtering>true</filtering>
 			</resource>
+			<resource>
+				<directory>src/test/java</directory>
+				<filtering>true</filtering>
+			</resource>
 		</resources>
 
 		<plugins>
@@ -121,7 +119,7 @@
 			<plugin>
 				<groupId>org.eclipse.xtend</groupId>
 				<artifactId>xtend-maven-plugin</artifactId>
-				<version>2.6.1</version>
+				<version>2.6.0</version>
 				<executions>
 					<execution>
 						<goals>
@@ -257,7 +255,7 @@
 		</profile>
 	</profiles>
 
-	<description>Plugback Active is a set of active annotations for the Xtend programming language.</description>
+	<description>Plugback JPA is a module that allows you to extend the Java Persistence API to query your DB using an sql-like concise and typesafe syntax.</description>
 	<organization>
 		<name>Plugback</name>
 		<url>http://plugback.com</url>
