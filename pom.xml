@@ -108,8 +108,9 @@
 				<filtering>true</filtering>
 			</resource>
 			<resource>
-				<directory>src/test/java</directory>
+				<directory>src/test/java/META-INF</directory>
 				<filtering>true</filtering>
+				<targetPath>../test-classes/META-INF</targetPath>
 			</resource>
 		</resources>
 

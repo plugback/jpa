@@ -16,7 +16,7 @@ class TestProxyCreator {
 		proxy.y = "ciao 2"
 		proxy.o = 3
 		proxy.p = false
-		val calls = (proxy as Calls).orderedCalls
+		val calls = (proxy as Calls).orderedCalls.map[key -> value]
 		assertEquals("[x->ciao, y->ciao 2, o->3, p->false]", calls.toString)
 	}
 
@@ -31,7 +31,7 @@ class TestProxyCreator {
 		proxy.o = 3
 		(proxy as Where).and
 		proxy.p = false
-		val calls = (proxy as Calls).orderedCalls
+		val calls = (proxy as Calls).orderedCalls.map[key -> value]
 		assertEquals("[x->ciao, and->null, y->ciao 2, and->null, o->3, and->null, p->false]", calls.toString)
 	}
 
@@ -47,7 +47,7 @@ class TestProxyCreator {
 		(proxy as Where).like("%me%")
 		(proxy as Where).or
 		proxy.o = 3
-		val calls = (proxy as Calls).orderedCalls
+		val calls = (proxy as Calls).orderedCalls.map[key -> value]
 		assertEquals("[x->ciao, and->null, p->false, and->null, yoyo->null, like->%me%, or->null, o->3]",
 			calls.toString)
 	}
@@ -61,7 +61,7 @@ class TestProxyCreator {
 		proxy.nestedObject.a = "ok"
 		(proxy as Where).or
 		proxy.nestedObject.x2.b = "nested ok"
-		val calls = (proxy as Calls).orderedCalls
+		val calls = (proxy as Calls).orderedCalls.map[key -> value]
 		assertEquals("[x->ciao, and->null, nestedObject.a->ok, or->null, nestedObject.x2.b->nested ok]",
 			calls.toString)
 	}
