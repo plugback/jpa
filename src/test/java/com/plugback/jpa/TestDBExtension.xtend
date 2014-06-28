@@ -1,20 +1,19 @@
 package com.plugback.jpa
 
 import com.plugback.active.properties.Property
-import java.io.File
 import java.lang.annotation.Retention
 import java.lang.annotation.RetentionPolicy
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.concurrent.Executors
 import javax.persistence.Entity
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 import javax.persistence.Id
-import javax.persistence.Persistence
+import javax.persistence.Temporal
+import javax.persistence.TemporalType
 import org.databene.contiperf.PerfTest
 import org.databene.contiperf.Required
 import org.databene.contiperf.junit.ContiPerfRule
 import org.junit.After
-import org.junit.AfterClass
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Rule
@@ -24,37 +23,11 @@ import static org.junit.Assert.*
 
 import static extension com.plugback.jpa.DBX.*
 
-class TestDBExtension {
-
-	static EntityManagerFactory emf
+class TestDBExtension extends DBTest {
 
 	@BeforeClass
-	def static void initDB() {
-		val persistencePath = path("META-INF/persistence.xml.test")
-		new File(persistencePath).renameTo(new File(persistencePath.substring(0, persistencePath.length - 5)))
-		emf = Persistence.createEntityManagerFactory("in-memory")
+	def static initDBWithSomeData() {
 		new TestDBExtension().insertSomeData
-	}
-
-	val EntityManager _db
-
-	new() {
-		_db = emf.createEntityManager
-	}
-
-	def EntityManager db() {
-		return _db
-	}
-
-	def static path(String path) {
-		val p = TestDBExtension.classLoader.getResource(path)
-		p.file
-	}
-
-	@AfterClass
-	def static void restorePersistence() {
-		val persistencePath = path("META-INF/persistence.xml")
-		new File(persistencePath).renameTo(new File(persistencePath + ".test"))
 	}
 
 	@Before
@@ -296,6 +269,7 @@ class TestDBExtension {
 		assertTrue(result3.filter[id == 1L].size == 0)
 		val result4 = db.find(TestUserPojo).where[id > 2].resultList
 		assertEquals(1, result4.size)
+
 	}
 
 	@Concurrent
@@ -402,6 +376,25 @@ class TestDBExtension {
 		db.transaction.commit
 	}
 
+	@Test
+	def void testDateOperators() {
+
+		val df = new SimpleDateFormat("yyyy-MM-dd")
+
+		val tp = new TestUserPojo3 => [id = 101L d1 = df.parse("2014-06-10"); d2 = df.parse("2014-07-10")]
+		val tp2 = new TestUserPojo3 => [id = 102L d1 = df.parse("2014-06-12"); d2 = df.parse("2014-07-04")]
+		val tp3 = new TestUserPojo3 => [id = 103L d1 = df.parse("2014-06-16"); d2 = df.parse("2014-07-02")]
+
+		insertIntoDB(tp, tp2, tp3)
+
+		val result5 = db.find(TestUserPojo3).where[d1 >= df.parse("2014-05-01")].resultList
+		assertEquals(3, result5.size)
+
+		val result6 = db.find(TestUserPojo3).where[d1 >= df.parse("2014-05-01") and d2 <= df.parse("2014-07-03")].
+			resultList
+		assertEquals(1, result6.size)
+
+	}
 }
 
 @Entity class TestUserPojo {
@@ -418,6 +411,16 @@ class TestDBExtension {
 	@Property String name2
 	@Property String email2
 	@Property TestUserPojo pojo
+
+}
+
+@Entity class TestUserPojo3 {
+
+	@Id @Property Long id
+	@Temporal(TemporalType.TIMESTAMP)
+	@Property Date d1
+	@Temporal(TemporalType.TIMESTAMP)
+	@Property Date d2
 
 }
 

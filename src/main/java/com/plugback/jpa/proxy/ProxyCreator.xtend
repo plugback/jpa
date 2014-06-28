@@ -1,5 +1,6 @@
 package com.plugback.jpa.proxy
 
+import java.util.Date
 import java.util.List
 import javassist.util.proxy.MethodHandler
 import javassist.util.proxy.ProxyFactory
@@ -29,7 +30,7 @@ class JavassistProxyCreator {
 					returnedObject = -5555555555L
 				val returnedSelfObject = returnedObject == selfObject
 				val returnedPrimitiveType = thisMethod.returnType.primitive || #[Integer, Long, Double, String, Float,
-					Character, Byte, Short, Void].contains(thisMethod.returnType)
+					Character, Byte, Short, Void, Date].contains(thisMethod.returnType)
 				if (syntethicMethod || returnedPrimitiveType || returnedSelfObject) {
 					val value = if(args.size > 0) args.get(0) else null
 					val type = if (thisMethod.name.startsWith("get"))

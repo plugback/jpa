@@ -6,7 +6,9 @@ import com.plugback.jpa.clause.Where
 import com.plugback.jpa.clause.WhereProcessor
 import com.plugback.jpa.proxy.Calls
 import com.plugback.jpa.proxy.JavassistProxyCreator
+import java.util.Date
 import javax.persistence.EntityManager
+import javax.persistence.EntityTransaction
 
 /**
  * 
@@ -157,6 +159,44 @@ class DBX<T> {
 		p.apply(pagination)
 		val offset = (pagination.page - 1) * pagination.size
 		return createQuery.setMaxResults(pagination.size).setFirstResult(offset).resultList
+	}
+
+	////////////////////////////////////////////////
+	//          transaction section              //
+	//////////////////////////////////////////////
+	/**
+	 * Encapsulate some logic within a transaction
+	 */
+	def static transaction(EntityManager db, (EntityTransaction)=>void t) {
+		val transaction = db.transaction
+		transaction.begin
+		try {
+			t.apply(transaction)
+			transaction.commit
+		} catch (Exception e) {
+			return new TransactionSession(true, transaction)
+		}
+		return new TransactionSession(false, transaction)
+	}
+
+	/**
+	 * what to do if the transaction goes bad
+	 */
+	def static error(TransactionSession s, (EntityTransaction)=>void onError) {
+		if (s.error) {
+			onError.apply(s.transaction)
+		}
+		return s
+	}
+
+	/**
+	 * what to do if the transaction was committed successfully
+	 */
+	def static success(TransactionSession s, (EntityTransaction)=>void onSuccess) {
+		if (!s.error) {
+			onSuccess.apply(s.transaction)
+		}
+		return s
 	}
 
 	private def createQuery() {
@@ -354,6 +394,13 @@ class DBX<T> {
 		return IntegerExtensions.operator_greaterThan(left, right)
 	}
 
+	def static operator_greaterThan(Date left, Date right) {
+		store[greaterThan(right)]
+		if (left == null)
+			return 0
+		return ComparableExtensions.operator_greaterThan(left, right)
+	}
+
 	////////////////////////////////////////////////
 	//          operator >=                      //
 	//////////////////////////////////////////////
@@ -523,6 +570,13 @@ class DBX<T> {
 	def static operator_greaterEqualsThan(int left, byte right) {
 		store[greaterEqualsThan(right)]
 		return IntegerExtensions.operator_greaterEqualsThan(left, right)
+	}
+
+	def static operator_greaterEqualsThan(Date left, Date right) {
+		store[greaterEqualsThan(right)]
+		if (left == null)
+			return 0
+		return ComparableExtensions.operator_greaterEqualsThan(left, right)
 	}
 
 	////////////////////////////////////////////////
@@ -696,6 +750,13 @@ class DBX<T> {
 		return IntegerExtensions.operator_lessThan(left, right)
 	}
 
+	def static operator_lessThan(Date left, Date right) {
+		store[lessThan(right)]
+		if (left == null)
+			return 0
+		return ComparableExtensions.operator_lessThan(left, right)
+	}
+
 	////////////////////////////////////////////////
 	//          operator <=                      //
 	//////////////////////////////////////////////
@@ -867,6 +928,18 @@ class DBX<T> {
 		return IntegerExtensions.operator_lessEqualsThan(left, right)
 	}
 
+	def static operator_lessEqualsThan(Date left, Date right) {
+		store[lessEqualsThan(right)]
+		if (left == null)
+			return 0
+		return ComparableExtensions.operator_lessEqualsThan(left, right)
+	}
+
+}
+
+@Data class TransactionSession {
+	Boolean error
+	EntityTransaction transaction
 }
 
 class Pagination {
