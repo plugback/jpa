@@ -6,3 +6,5 @@ derby.log
 src/main/xtend-gen/
 src/test/xtend-gen/
 /target/
+/bin/
+/xtend-gen/
