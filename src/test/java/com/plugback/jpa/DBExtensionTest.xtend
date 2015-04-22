@@ -7,32 +7,42 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.Executors
 import javax.persistence.Entity
+import javax.persistence.EntityManager
 import javax.persistence.Id
+import javax.persistence.PersistenceContext
 import javax.persistence.Temporal
 import javax.persistence.TemporalType
-import org.junit.After
 import org.junit.Before
-import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Test
 
 import static org.junit.Assert.*
 
 import static extension com.plugback.jpa.DBX.*
 
-class TestDBExtension extends DBTest {
+class DBExtensionTest {
 
-	@BeforeClass
-	def static initDBWithSomeData() {
-		new TestDBExtension().insertSomeData
-	}
+	@ClassRule
+	public static TestDB testDb = new TestDB(TestUserPojo, TestUserPojo2, TestUserPojo3)
+
+	@PersistenceContext
+	private EntityManager db
 
 	@Before
-	def void inserData() {
+	def void setup() {
+		db = testDb.entityManager
+		insertSomeData()
 	}
 
-	@After
-	def void clearDB() {
-		//clear(TestUserPojo)
+	def void insertSomeData() {
+		db.transaction.begin
+		val px = new TestUserPojo => [id = 1L email = "me@salvatoreromeo.com" name = "romeo"]
+		val py = new TestUserPojo => [id = 2L email = "me2@salvatoreromeo.com" name = "romeo"]
+		val pz = new TestUserPojo => [id = 3L email = "me3@salvatoreromeo.com" name = "salvatore"]
+		db.merge(px)
+		db.merge(py)
+		db.merge(pz)
+		db.transaction.commit
 	}
 
 	@Concurrent
@@ -87,7 +97,7 @@ class TestDBExtension extends DBTest {
 
 	@Test
 	def void testSort() {
-		insertIntoDB(new TestUserPojo => [id = 4L name = "fausta"])
+		testDb.insertIntoDB(new TestUserPojo => [id = 4L name = "fausta"])
 		val result = db.find(TestUserPojo).where[name = "romeo" or name = "salvatore" or name = "fausta"].orderBy[name].
 			resultList
 		assertEquals(4, result.size)
@@ -101,9 +111,11 @@ class TestDBExtension extends DBTest {
 
 	@Test
 	def void testSortAsc() {
-		insertIntoDB(new TestUserPojo => [id = 4L name = "fausta"])
-		val result = db.find(TestUserPojo).where[name = "romeo" or name = "salvatore" or name = "fausta"].orderBy[name
-			asc].resultList
+		testDb.insertIntoDB(new TestUserPojo => [id = 4L name = "fausta"])
+		val result = db.find(TestUserPojo).where[name = "romeo" or name = "salvatore" or name = "fausta"].orderBy [
+			name
+			asc
+		].resultList
 		assertEquals(4, result.size)
 		assertEquals("fausta", result.get(0).name)
 		assertEquals("salvatore", result.get(3).name)
@@ -115,9 +127,11 @@ class TestDBExtension extends DBTest {
 
 	@Test
 	def void testSortDesc() {
-		insertIntoDB(new TestUserPojo => [id = 4L name = "fausta"])
-		val result = db.find(TestUserPojo).where[name = "romeo" or name = "salvatore" or name = "fausta"].orderBy[name
-			desc].resultList
+		testDb.insertIntoDB(new TestUserPojo => [id = 4L name = "fausta"])
+		val result = db.find(TestUserPojo).where[name = "romeo" or name = "salvatore" or name = "fausta"].orderBy [
+			name
+			desc
+		].resultList
 		assertEquals(4, result.size)
 		assertEquals("fausta", result.get(3).name)
 		assertEquals("salvatore", result.get(0).name)
@@ -152,8 +166,10 @@ class TestDBExtension extends DBTest {
 	@Concurrent
 	@Test
 	def void testDoubleLikeAndEquals() {
-		val result = db.find(TestUserPojo).where[email like("%me%") and name like("%ro%") and id = 1L].orderBy[name desc].
-			resultList
+		val result = db.find(TestUserPojo).where[email like("%me%") and name like("%ro%") and id = 1L].orderBy [
+			name
+			desc
+		].resultList
 		assertEquals(1, result.size)
 	}
 
@@ -183,60 +199,34 @@ class TestDBExtension extends DBTest {
 
 	@Test
 	def void concurrentTest() {
-		val tests = TestDBExtension.methods.filter[isAnnotationPresent(Test) && isAnnotationPresent(Concurrent)]
+		val tests = DBExtensionTest.methods.filter[isAnnotationPresent(Test) && isAnnotationPresent(Concurrent)]
 		val es = Executors.newCachedThreadPool
 		for (p : 1 .. 1000) {
 			val rn = Math.round(((Math.random() * (tests.size - 1)))).intValue
 			val test = tests.get(rn)
 			es.execute(
-				[ |
-					println('''starting test «p»: «test.name»''')
-					val t = new TestDBExtension()
-					try {
-						test.invoke(t)
-					} catch (Exception e) {
-						throw e
-					}
-					println('''just executed test «p»: «test.name»''')
-				])
+				[|
+				println('''starting test «p»: «test.name»''')
+				try {
+					test.invoke(this)
+				} catch (Exception e) {
+					throw e
+				}
+				println('''just executed test «p»: «test.name»''')
+			])
 		}
 		es.shutdown()
 	}
 
+
 	@Test(timeout=10000)
 	def void performanceTest() {
-		val tests = TestDBExtension.methods.filter[isAnnotationPresent(Test) && isAnnotationPresent(Concurrent)]
+		val tests = DBExtensionTest.methods.filter[isAnnotationPresent(Test) && isAnnotationPresent(Concurrent)]
 		for (i : 1 .. 1000) {
 			val rn = Math.round(((Math.random() * (tests.size - 1)))).intValue
 			val test = tests.get(rn)
-			test.invoke(new TestDBExtension)
+			test.invoke(this)
 		}
-	}
-
-	def insertSomeData() {
-		val tdb = emf.createEntityManager
-		tdb.transaction.begin
-		val px = new TestUserPojo => [id = 1L email = "me@salvatoreromeo.com" name = "romeo"]
-		val py = new TestUserPojo => [id = 2L email = "me2@salvatoreromeo.com" name = "romeo"]
-		val pz = new TestUserPojo => [id = 3L email = "me3@salvatoreromeo.com" name = "salvatore"]
-		tdb.merge(px)
-		tdb.merge(py)
-		tdb.merge(pz)
-		tdb.transaction.commit
-	}
-
-	def insertIntoDB(Object... o) {
-		val tdb = emf.createEntityManager
-		tdb.transaction.begin
-		o.forEach[tdb.merge(it)]
-		tdb.transaction.commit
-	}
-
-	def clear(Class<?>... cs) {
-		val tdb = emf.createEntityManager
-		tdb.transaction.begin
-		cs.forEach[tdb.find(it).resultList.forEach[tdb.remove(it)]]
-		tdb.transaction.commit
 	}
 
 	@Concurrent
@@ -357,7 +347,7 @@ class TestDBExtension extends DBTest {
 	def void testNestedObjects() {
 		val np = new TestUserPojo => [id = 6L name = "nested"]
 		val mp = new TestUserPojo2 => [id = 5L name2 = "fausta" pojo = np email2 = "f@x.co"]
-		insertIntoDB(np, mp)
+		testDb.insertIntoDB(np, mp)
 
 		val result = db.find(TestUserPojo2).where[pojo.name = "nested"].resultList
 		assertEquals(1, result.size)
@@ -378,7 +368,7 @@ class TestDBExtension extends DBTest {
 		val tp2 = new TestUserPojo3 => [id = 102L d1 = df.parse("2014-06-12"); d2 = df.parse("2014-07-04")]
 		val tp3 = new TestUserPojo3 => [id = 103L d1 = df.parse("2014-06-16"); d2 = df.parse("2014-07-02")]
 
-		insertIntoDB(tp, tp2, tp3)
+		testDb.insertIntoDB(tp, tp2, tp3)
 
 		val result5 = db.find(TestUserPojo3).where[d1 >= df.parse("2014-05-01")].resultList
 		assertEquals(3, result5.size)
