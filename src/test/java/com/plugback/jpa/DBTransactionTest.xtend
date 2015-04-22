@@ -1,21 +1,29 @@
 package com.plugback.jpa
 
+import javax.persistence.EntityManager
+import org.junit.Rule
 import org.junit.Test
 
 import static org.junit.Assert.*
 
 import static extension com.plugback.jpa.DBX.*
 
-class TestDBTransaction extends DBTest {
+class DBTransactionTest {
+
+	@Rule
+	public TestDB testDb = new TestDB(TestUserPojo)
+
+	def EntityManager db() {
+		return testDb.entityManager
+	}
 
 	@Test
 	def testSuccessTransaction() {
-		val db = emf.createEntityManager
 		db.transaction [
 			db.merge(new TestUserPojo => [id = 201L])
 		]
 
-		val db2 = emf.createEntityManager
+		val db2 = testDb.entityManagerFactory.createEntityManager
 		val found = db2.find(TestUserPojo, 201L)
 		assertTrue(found != null)
 		val found2 = db2.find(TestUserPojo, 301L)
@@ -25,14 +33,13 @@ class TestDBTransaction extends DBTest {
 
 	@Test
 	def testErrorTransaction() {
-		val db = emf.createEntityManager
 		val checkSuccessNotCalled = new StringBuilder("")
 		db.transaction [
 			db.merge(new TestUserPojo => [id = 202L])
 			throw new IllegalStateException
 		].error[rollback].success[checkSuccessNotCalled.append("should not execute")]
 
-		val db2 = emf.createEntityManager
+		val db2 = testDb.entityManagerFactory.createEntityManager
 		val found = db2.find(TestUserPojo, 202L)
 		assertTrue(found == null)
 
@@ -41,7 +48,6 @@ class TestDBTransaction extends DBTest {
 
 	@Test
 	def testTransactionCommitted() {
-		val db = emf.createEntityManager
 		val checkSuccessCalled = new StringBuilder("")
 		val checkErrorNotCalled = new StringBuilder("")
 		db.transaction [
@@ -49,7 +55,7 @@ class TestDBTransaction extends DBTest {
 		].error[rollback checkErrorNotCalled.append("should not execute")].success[
 			checkSuccessCalled.append("should execute")]
 
-		val db2 = emf.createEntityManager
+		val db2 = testDb.entityManagerFactory.createEntityManager
 		val found = db2.find(TestUserPojo, 203L)
 		assertTrue(found != null)
 
