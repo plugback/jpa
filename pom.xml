@@ -35,6 +35,22 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
+	<repositories>
+		<repository>
+			<id>Sonatype</id>
+			<layout>default</layout>
+			<url>https://oss.sonatype.org/content/repositories/releases/</url>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>Sonatype Plugins</id>
+			<layout>default</layout>
+			<url>https://oss.sonatype.org/content/repositories/releases/</url>
+		</pluginRepository>
+	</pluginRepositories>
+
 	<dependencies>
 
 		<dependency>
@@ -110,6 +126,7 @@
 		</resources>
 
 		<plugins>
+
 
 			<plugin>
 				<groupId>org.eclipse.xtend</groupId>
@@ -213,9 +230,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
-
-
 
 		</plugins>
 	</build>
